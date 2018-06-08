@@ -1,24 +1,23 @@
-FROM ubuntu:latest
+FROM alpine:latest
 
 ENV APP_HOME=/opt/feinstaub/
 
 # Install required packages
-RUN apt-get update && \
-	apt-get -y install python3-pip python3-dev && \
-	pip3 install virtualenv
+RUN apk add --no-cache python3 git && \
+    pip3 install virtualenv
 
 RUN \
-	mkdir -p ${APP_HOME} && \
-	cd ${APP_HOME} && \
-	virtualenv venv && \
-	. venv/bin/activate && \
-	pip3 install flask paho-mqtt influxdb
+    mkdir -p ${APP_HOME} && \
+    cd ${APP_HOME} && \
+    virtualenv venv && \
+    . venv/bin/activate && \
+    pip3 install paho-mqtt influxdb flask
 
 WORKDIR ${APP_HOME}
-COPY src src
 
+COPY src src
 EXPOSE 5000
 
 ENTRYPOINT ["src/entrypoint.sh"]
 
-CMD [ "-c", "/opt/tdm.conf" ]
+CMD [ "-c", "/opt/configs/tdm.conf" ]
