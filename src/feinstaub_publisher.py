@@ -128,10 +128,13 @@ def publish_data():
             _, _station_id = _tag.split('=')
 
             try:
-                v_timestamp = v_measure['timestamp']
+                v_timestamp    = v_measure['timestamp']
             except KeyError as kex:
                 t_now = datetime.datetime.now().timestamp()
                 v_timestamp = int(t_now)
+
+            v_dateObserved = datetime.datetime.fromtimestamp(v_timestamp,
+                        tz=datetime.timezone.utc).isoformat()
 
             v_fields = v_measure['field_set'].split(',')
 
@@ -154,7 +157,7 @@ def publish_data():
             # Insofar, one message is sent for each sensor
             for _sensor, _data in _sensor_tree.items():
                 _message = dict()
-                _data.update({'timestamp': v_timestamp})
+                _data.update({'timestamp': v_timestamp, 'dateObserved': v_dateObserved})
                 _message["payload"] = json.dumps(_data)
                 _message["topic"] = "WeatherObserved/{}.{}".format(_station_id, _sensor)
                 _message['qos'] = 0
