@@ -19,6 +19,7 @@ MQTT_HOST     = "localhost"     # MQTT Broker address
 MQTT_PORT     = 1883            # MQTT Broker port
 INFLUXDB_HOST = "localhost"     # INFLUXDB address
 INFLUXDB_PORT = 8086            # INFLUXDB port
+LOCATION      = "0.0,0.0"       # DEFAULT location
 
 
 APPLICATION_NAME = 'FEINSTAUB_publisher'
@@ -79,6 +80,9 @@ def publish_data():
     v_topic = app.config['MQTT_TOPIC']
     v_influxdb_host = app.config['INFLUXDB_HOST']
     v_influxdb_port = app.config['INFLUXDB_PORT']
+
+    v_latitude  = app.config['LATITUDE']
+    v_longitude = app.config['LONGITUDE']
 
     _data = flask.request.get_data()
     _args = flask.request.args.to_dict()
@@ -154,10 +158,22 @@ def publish_data():
 
                     _sensor_tree[_sensor_model].update({PARAMETERS_MAP[_parameter]: _value})
 
+            # If GPS data is not present in SFDS message, uses position
+            # parameters from config options
+            if 'GPS' in _sensor_tree:
+                v_latitude  = _sensor_tree['GPS']['latitude']
+                v_longitude = _sensor_tree['GPS']['longitude']
+
             # Insofar, one message is sent for each sensor
             for _sensor, _data in _sensor_tree.items():
+                if _sensor is 'GPS':
+                    continue
+
                 _message = dict()
+
                 _data.update({'timestamp': v_timestamp, 'dateObserved': v_dateObserved})
+                _data.update({'latitude': v_latitude, 'longitude': v_longitude})
+
                 _message["payload"] = json.dumps(_data)
                 _message["topic"] = "WeatherObserved/{}.{}".format(_station_id, _sensor)
                 _message['qos'] = 0
@@ -202,6 +218,7 @@ def main():
         'logging_level' : logging.INFO,
         'influxdb_host' : INFLUXDB_HOST,
         'influxdb_port' : INFLUXDB_PORT,
+        'location'      : LOCATION
         }
 
     v_config_section_defaults = {
@@ -238,6 +255,9 @@ def main():
     parser.add_argument('--influxdb-port', dest='influxdb_port', action='store', 
         type=int,
         help='port of the influx database (default: {})'.format(INFLUXDB_PORT))
+    parser.add_argument('--location', dest='location', action='store',
+        type=str,
+        help='GPS coordinates of the sensor as latitude,longitude (default: {})'.format(LOCATION))
 
     args = parser.parse_args(remaining_args)
 
@@ -246,6 +266,7 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
 
     v_mqtt_topic = 'sensor/' + 'FEINSTAUB'
+    v_latitude, v_longitude = map(float, args.location.split(','))
 
     config_dict = {
             'LOGGER'     : logger,
@@ -256,6 +277,9 @@ def main():
 
             'INFLUXDB_HOST' : args.influxdb_host,
             'INFLUXDB_PORT' : args.influxdb_port,
+
+            'LATITUDE'  : v_latitude,
+            'LONGITUDE' : v_longitude,
             }
 
     app.config.from_mapping(config_dict)
