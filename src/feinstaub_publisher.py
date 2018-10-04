@@ -28,6 +28,7 @@ import configparser
 import paho.mqtt.publish as publish
 from werkzeug.utils import cached_property
 from werkzeug.wrappers import Request
+from influxdb.exceptions import InfluxDBClientError
 
 
 MQTT_HOST     = "localhost"     # MQTT Broker address
@@ -117,19 +118,22 @@ def publish_data():
         _client.create_database(_db)
 
     try:
+        v_logger.debug("Insert data into InfluxDB: {:s}".format(str(_data)))
         _result = _client.request(
                 'write',
                 'POST',
                 params=_args,
                 data=_data,
                 expected_response_code=204)
-        v_logger.debug("Insert data into InfluxDB: {:s}".format(str(_data)))
-    except Exception as ex:
-        v_logger.error(ex)
+        _response = flask.make_response(_result.text, _result.status_code)
+    except InfluxDBClientError as _iex:
+        v_logger.error(_iex)
+        _response = flask.make_response(_iex.content, _iex.code)
+    except Exception as _ex:
+        v_logger.error(_ex)
+        _response = flask.make_response(_ex, 400)
     finally:
         _client.close()
-
-    _response = flask.make_response(_result.text, _result.status_code)
 
     v_messages = []
 
