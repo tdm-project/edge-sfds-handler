@@ -104,6 +104,28 @@ def publish_data():
     _args = flask.request.args.to_dict()
     _db = _args.get('db')
 
+    # Ok, a dirty hack
+    # In presence of a GPS module, SDFS sends GPS date and time as unquoted
+    # strings and they cannot be saved to Influxdb.  Here these values are
+    # removed from the message and replaced by a ISO format time string
+    _m, _f = _data.decode().split(' ')
+    _gps_dts = {
+            _i.split('=')[0]:_i.split('=')[1]
+            for _i in _f.split(',')
+            if _i.startswith('GPS_date') or _i.startswith('GPS_time')
+            }
+
+    if _gps_dts:
+        _nmea_gps_format = '%d/%m/%Y-%H:%M:%S.%f'
+        _nmea_gps_string = '{:s}-{:s}'.format(_gps_dts['GPS_date'], _gps_dts['GPS_time'])
+        _gps_dt = datetime.datetime.strptime(_nmea_gps_string, _nmea_gps_format)
+        _influx_gps_time = 'GPS_time="{:%Y-%m-%dT%H:%M:%SZ}"'.format(_gps_dt)
+
+        _new_f = [_i for _i in _f.split(',') if not _i.startswith('GPS_date') and not _i.startswith('GPS_time')]
+        _new_f.insert(0, _influx_gps_time)
+        _new_f = ','.join(_new_f)
+        _data = ' '.join([_m, _new_f])
+
     _client = influxdb.InfluxDBClient(
             host=v_influxdb_host,
             port=v_influxdb_port,
