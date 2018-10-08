@@ -102,7 +102,15 @@ def publish_data():
 
     _data = flask.request.get_data()
     _args = flask.request.args.to_dict()
+    _auth = flask.request.authorization
     _db = _args.get('db')
+
+    if _auth is None:
+        _db_username = None
+        _db_password = None
+    else:
+        _db_username = _auth['username']
+        _db_password = _auth['password']
 
     # Ok, a dirty hack
     # In presence of a GPS module, SDFS sends GPS date and time as unquoted
@@ -126,18 +134,24 @@ def publish_data():
         _new_f = ','.join(_new_f)
         _data = ' '.join([_m, _new_f])
 
-    _client = influxdb.InfluxDBClient(
-            host=v_influxdb_host,
-            port=v_influxdb_port,
-            username='root',
-            password='root',
-            database=_db
+    try:
+        _client = influxdb.InfluxDBClient(
+                host=v_influxdb_host,
+                port=v_influxdb_port,
+                username=_db_username,
+                password=_db_password,
+                database=_db
             )
 
-    _dbs = _client.get_list_database()
-    if _db not in [_d['name'] for _d in _dbs]:
-        v_logger.info("InfluxDB database '{:s}' not found. Creating a new one.".format(_db))
-        _client.create_database(_db)
+        _dbs = _client.get_list_database()
+        if _db not in [_d['name'] for _d in _dbs]:
+            v_logger.info("InfluxDB database '{:s}' not found. Creating a new one.".format(_db))
+            _client.create_database(_db)
+
+    except InfluxDBClientError as _iex:
+        v_logger.error('InfluDB return code {}: {}'.format(_iex.code, _iex.content.rstrip()))
+        _response = flask.make_response(_iex.content, _iex.code)
+        return _response
 
     try:
         v_logger.debug("Insert data into InfluxDB: {:s}".format(str(_data)))
