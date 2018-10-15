@@ -124,7 +124,7 @@ def publish_data():
             }
 
     if _gps_dts:
-        _nmea_gps_format = '%d/%m/%Y-%H:%M:%S.%f'
+        _nmea_gps_format = '%m/%d/%Y-%H:%M:%S.%f'
         _nmea_gps_string = '{:s}-{:s}'.format(_gps_dts['GPS_date'], _gps_dts['GPS_time'])
         _gps_dt = datetime.datetime.strptime(_nmea_gps_string, _nmea_gps_format)
         _influx_gps_time = 'GPS_time="{:%Y-%m-%dT%H:%M:%SZ}"'.format(_gps_dt)
@@ -174,9 +174,7 @@ def publish_data():
     v_messages = []
 
     try:
-
         v_payload = flask.request.get_payload
-
 
         # Creates a dictionary with the sensor data
         for v_measure in v_payload:
