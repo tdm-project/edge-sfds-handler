@@ -18,6 +18,8 @@ RUN \
 WORKDIR ${APP_HOME}
 
 COPY src src
+COPY tests tests
+
 EXPOSE 5000
 
 ENTRYPOINT ["src/entrypoint.sh"]
