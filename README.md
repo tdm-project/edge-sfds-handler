@@ -1,4 +1,4 @@
-# TDM Edge Dispatcher
+# TDM Edge SFDS Station Handler
 In [TDM Edge Gateway Reference Architecture](http://www.tdm-project.it/en/) the handler of the remote weather station is named ***Feinstaub Publisher*** after the name of the weather and air quality station adopted. 
 
 Since this station sends its data via WiFi in a format and protocol suitable for ingestion in an InfluxDB database, the handler simulates a listening InfluxDB server and intercepts the incoming data. 
