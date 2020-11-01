@@ -33,6 +33,7 @@ from influxdb.exceptions import InfluxDBClientError
 
 MQTT_LOCAL_HOST = "localhost"     # MQTT Broker address
 MQTT_LOCAL_PORT = 1883            # MQTT Broker port
+INFLUXDB_DB = "luftdaten"         # INFLUXDB database
 INFLUXDB_HOST = "localhost"     # INFLUXDB address
 INFLUXDB_PORT = 8086            # INFLUXDB port
 GPS_LOCATION = "0.0,0.0"        # DEFAULT location
@@ -105,6 +106,12 @@ def publish_data():
     _args = flask.request.args.to_dict()
     _auth = flask.request.authorization
     _db = _args.get('db')
+
+    # The required 'db' must match the configured db
+    if _db != app.config['INFLUXDB_DB']:
+        v_logger.error('Query not allowed: invalid db.')
+        _response = flask.make_response('Query not allowed: invalid db.', 400)
+        return _response
 
     if _auth is None:
         _db_username = None
@@ -280,6 +287,7 @@ def configuration_parser(p_args=None):
         'mqtt_local_host'     : MQTT_LOCAL_HOST,
         'mqtt_local_port'     : MQTT_LOCAL_PORT,
         'logging_level' : logging.INFO,
+        'influxdb_db'   : INFLUXDB_DB,
         'influxdb_host' : INFLUXDB_HOST,
         'influxdb_port' : INFLUXDB_PORT,
         'gps_location'  : GPS_LOCATION,
@@ -345,6 +353,10 @@ def configuration_parser(p_args=None):
         type=int,
         help='port of the influx database (default: {})'.format(INFLUXDB_PORT))
     parser.add_argument(
+        '--influxdb-db', dest='influxdb_db', action='store',
+        type=str,
+        help='name of the database to use (default: {})'.format(INFLUXDB_DB))
+    parser.add_argument(
         '--gps-location', dest='gps_location', action='store',
         type=str,
         help=('GPS coordinates of the sensor as latitude,longitude '
@@ -382,6 +394,7 @@ def main():
         'LOG_LEVEL'  : args.logging_level,
         'MQTT_TOPIC' : v_mqtt_topic,
 
+        'INFLUXDB_DB' : args.influxdb_db,
         'INFLUXDB_HOST' : args.influxdb_host,
         'INFLUXDB_PORT' : args.influxdb_port,
 

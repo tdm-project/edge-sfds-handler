@@ -34,6 +34,9 @@ Values are applied in the following order, the last overwriting the previous:
 * **influxdb\_port**
 
    port of the influx database (default: *8086*)
+* **influxdb\_db**
+
+   the name of the influx database to use (default: *luftdaten*)
 * **gps\_location**
 
    GPS coordinates of the sensor as latitude,longitude (default: *0.0,0.0*)
@@ -91,6 +94,9 @@ logging_level = 1
 *  **--influxdb-port INFLUXDB\_PORT**
 
    port of the influx database (default: *8086*)
+*  **--influxdb-db INFLUXDB\_DB**
+
+   name of the database to use (default: *luftdaten*)
 *  **--gps-location GPS\_LOCATION**
 
    GPS coordinates of the sensor as latitude,longitude (default: *0.0,0.0*)
