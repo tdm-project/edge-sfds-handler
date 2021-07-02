@@ -128,24 +128,26 @@ def publish_data():
     _gps_dts = {
         _i.split('=')[0]: _i.split('=')[1]
         for _i in _f.split(',')
-        if _i.startswith('GPS_date') or _i.startswith('GPS_time')
+        if _i.startswith('GPS_')
     }
 
     if _gps_dts:
-        _nmea_gps_format = '%m/%d/%Y-%H:%M:%S.%f'
-        _nmea_gps_string = '{:s}-{:s}'.format(
-            _gps_dts['GPS_date'], _gps_dts['GPS_time'])
-        _gps_dt = datetime.datetime.strptime(
-            _nmea_gps_string, _nmea_gps_format)
-        _influx_gps_time = 'GPS_time="{:%Y-%m-%dT%H:%M:%SZ}"'.format(_gps_dt)
+        # Old firmware sends GPS data/time as two different keys
+        if 'GPS_data' in [*_gps_dts]:
+            _nmea_gps_format = '%m/%d/%Y-%H:%M:%S.%f'
+            _nmea_gps_string = '{:s}-{:s}'.format(
+                _gps_dts['GPS_date'], _gps_dts['GPS_time'])
+            _gps_dt = datetime.datetime.strptime(
+                _nmea_gps_string, _nmea_gps_format)
+            _influx_gps_time = 'GPS_time="{:%Y-%m-%dT%H:%M:%SZ}"'.format(_gps_dt)
 
-        _new_f = [_i for _i in _f.split(',')
-                  if not _i.startswith('GPS_date') and not
-                  _i.startswith('GPS_time')]
+            _new_f = [_i for _i in _f.split(',')
+                      if not _i.startswith('GPS_date') and not
+                      _i.startswith('GPS_time')]
 
-        _new_f.insert(0, _influx_gps_time)
-        _new_f = ','.join(_new_f)
-        _data = ' '.join([_m, _new_f])
+            _new_f.insert(0, _influx_gps_time)
+            _new_f = ','.join(_new_f)
+            _data = ' '.join([_m, _new_f])
 
     try:
         _client = influxdb.InfluxDBClient(
