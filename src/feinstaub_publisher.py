@@ -227,6 +227,14 @@ def publish_data():
                     if _sensor_model not in _sensor_tree:
                         _sensor_tree[_sensor_model] = {}
 
+                    # Forces numeric parameters to be represented as float
+                    try:
+                        _value = float(_value)
+                    except ValueError:
+                        v_logger.error(
+                            'Parameter %s expected as float, %s got instead',
+                            _parameter, _value)
+
                     _sensor_tree[_sensor_model].update(
                         {PARAMETERS_MAP[_parameter]: _value})
 
